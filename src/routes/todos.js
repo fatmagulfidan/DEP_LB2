@@ -1,3 +1,51 @@
+/**
+ * @swagger
+ * /todos:
+ *   get:
+ *     summary: Alle Todos abrufen
+ *     responses:
+ *       200:
+ *         description: Todo-Liste
+ *   post:
+ *     summary: Neues Todo erstellen
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ * /todos/{id}:
+ *   put:
+ *     summary: Todo aktualisieren
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               done:
+ *                 type: boolean
+ *   delete:
+ *     summary: Todo löschen
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ */
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
