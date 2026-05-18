@@ -1,12 +1,29 @@
 const express = require('express');
 const app = express();
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
 require('dotenv').config();
 
 const todosRouter = require('./routes/todos');
 
 app.use(express.json());
 
-// Health check - Render ve ödev için zorunlu
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Todo API',
+      version: '1.0.0',
+      description: 'Einfache Todo REST API mit Express und PostgreSQL',
+    },
+    servers: [{ url: 'https://dep-lb2.onrender.com' }],
+  },
+  apis: ['./src/routes/*.js'],
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 app.get('/health', async (req, res) => {
   const pool = require('./db/pool');
   try {
@@ -18,6 +35,10 @@ app.get('/health', async (req, res) => {
 });
 
 app.use('/todos', todosRouter);
+
+app.get('/', (req, res) => {
+  res.redirect('/api-docs');
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
