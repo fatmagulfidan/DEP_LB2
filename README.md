@@ -41,8 +41,8 @@ graph TD
     D -->|main branch| H[deploy-prod]
     G --> I[Render dev]
     H --> J[Render prod]
-    I <-->|PostgreSQL| K[Neon Database]
-    J <-->|PostgreSQL| K
+    I -->|PostgreSQL| K[Neon Database]
+    J -->|PostgreSQL| K
     L[Browser] -->|HTTPS| J
 Zwei Services:
 
