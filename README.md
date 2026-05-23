@@ -39,8 +39,8 @@ graph TD
     D -->|Nein| F[Stop]
     D -->|dev branch| G[deploy-dev]
     D -->|main branch| H[deploy-prod]
-    G --> I[Render - dep-lb2-dev]
-    H --> J[Render - dep-lb2]
+    G --> I[Render dev]
+    H --> J[Render prod]
     I <-->|PostgreSQL| K[Neon Database]
     J <-->|PostgreSQL| K
     L[Browser] -->|HTTPS| J
