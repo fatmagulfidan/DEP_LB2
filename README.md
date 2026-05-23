@@ -3,7 +3,8 @@
 Eine produktionsreife Todo REST API mit Express.js und PostgreSQL.  
 Containerisiert mit Docker, automatisch deployed über GitHub Actions auf Render.
 
-🔗 **Live-URL:** https://dep-lb2.onrender.com  
+🔗 **Live-URL (Production):** https://dep-lb2.onrender.com  
+🔗 **Live-URL (Development):** https://dep-lb2-1.onrender.com  
 📖 **API Dokumentation:** https://dep-lb2.onrender.com/api-docs
 
 ---
@@ -22,6 +23,7 @@ Sie wurde im Rahmen des Moduls DEP entwickelt, um den vollständigen Deployment-
 | `/todos/:id` | PUT | Todo aktualisieren (Titel oder Status) |
 | `/todos/:id` | DELETE | Todo löschen |
 | `/health` | GET | Systemstatus und Datenbankverbindung prüfen |
+| `/metrics` | GET | Uptime, Request-Anzahl und Memory-Nutzung |
 | `/api-docs` | GET | Interaktive API-Dokumentation (Swagger UI) |
 
 ---
@@ -30,15 +32,18 @@ Sie wurde im Rahmen des Moduls DEP entwickelt, um den vollständigen Deployment-
 
 ```mermaid
 graph TD
-    A[Developer] -->|git push main| B[GitHub]
+    A[Developer] -->|git push dev| B[GitHub]
+    A -->|git push main| B
     B -->|trigger| C[GitHub Actions]
-    C -->|npm lint + test| D{Tests OK?}
-    D -->|Ja| E[Deploy Hook]
+    C -->|lint + audit + test| D{Tests OK?}
     D -->|Nein| F[Stop]
-    E --> G[Render]
-    G -->|baut Docker Image| H[Express API Container]
-    H <-->|PostgreSQL Verbindung| I[Neon Database]
-    J[Browser] -->|HTTPS| H
+    D -->|dev branch| G[deploy-dev]
+    D -->|main branch| H[deploy-prod]
+    G --> I[Render - dep-lb2-dev]
+    H --> J[Render - dep-lb2]
+    I <-->|PostgreSQL| K[Neon Database]
+    J <-->|PostgreSQL| K
+    L[Browser] -->|HTTPS| J
 Zwei Services:
 
 Express API – läuft in einem Docker Container auf Render
@@ -51,7 +56,7 @@ Node.js 20 + Express.js	Backend Framework
 PostgreSQL	Relationale Datenbank
 Docker + Docker Compose	Containerisierung, lokale Entwicklung
 GitHub Actions	CI/CD Pipeline
-Render	Cloud Deployment Plattform
+Render	Cloud Deployment Plattform (dev + prod)
 Neon	Managed PostgreSQL in der Cloud
 Swagger UI + swagger-jsdoc	API Dokumentation
 Jest + Supertest	Automatisierte Tests
@@ -81,29 +86,45 @@ node src/db/migrate.js
 5. API aufrufen
 Swagger UI: http://localhost:3000/api-docs
 Health Check: http://localhost:3000/health
+Metrics: http://localhost:3000/metrics
 6. Tests ausführen
 npm test
 CI/CD Pipeline
-Bei jedem Push auf main läuft folgende Pipeline automatisch:
+Bei jedem Push läuft folgende Pipeline automatisch:
 
+git push → dev
+    └── Job: test
+         ├── npm ci
+         ├── npm run lint
+         ├── npm audit
+         └── npm test
+              └── (nur bei Erfolg) Job: deploy-dev
+                       └── Render Deploy Hook → dep-lb2-dev live
 git push → main
     └── Job: test
          ├── npm ci
          ├── npm run lint
+         ├── npm audit
          └── npm test
-              └── (nur bei Erfolg) Job: deploy
-                       └── Render Deploy Hook → neue Version live
-Benötigter GitHub Secret:
+              └── (nur bei Erfolg) Job: deploy-prod
+                       └── Render Deploy Hook → dep-lb2 live
+Zwei Umgebungen:
+
+Umgebung	Branch	URL
+Production	main	https://dep-lb2.onrender.com
+Development	dev	https://dep-lb2-1.onrender.com
+Benötigte GitHub Secrets:
 
 Secret	Beschreibung
-RENDER_DEPLOY_HOOK	URL zum Auslösen des Render Deployments
+RENDER_DEPLOY_HOOK	Production Deploy Hook
+RENDER_DEPLOY_HOOK_DEV	Development Deploy Hook
 Produktionsreife
 Merkmal	Umsetzung
 Containerisiert	Multi-stage Dockerfile mit Non-Root-User; docker-compose.yml für lokale Entwicklung
-Automatisiert	GitHub Actions: Lint + Tests laufen bei jedem Push, Deployment nur bei Erfolg
-Konfigurierbar	Alle Secrets in Environment-Variablen; .env in .gitignore; .env.example im Repo
+Automatisiert	GitHub Actions: Lint + Audit + Tests laufen bei jedem Push, Deployment nur bei Erfolg
+Konfigurierbar	Alle Secrets in Environment-Variablen; .env in .gitignore; .env.example im Repo; Multi-Environment-Setup (dev/prod)
 Erreichbar	Stabil unter https://dep-lb2.onrender.com erreichbar
-Überwachbar	GET /health prüft aktiv die Datenbankverbindung
+Überwachbar	GET /health prüft Datenbankverbindung; GET /metrics zeigt Uptime und Memory
 Dokumentiert	README mit Architektur, Setup-Anleitung und Entscheidungsbegründungen
 Entscheidungsbegründungen
 Warum Render?
@@ -127,6 +148,7 @@ Jest Hanging: Jest beendet sich nicht automatisch, wenn ein Express-Server noch 
 Free Tier Limits: Render erlaubt nur eine kostenlose PostgreSQL-Instanz pro Account – daher Wechsel zu Neon als externe Datenbank.
 Environment Variables in Docker: Die .env Datei wird nicht in den Container kopiert – Variablen werden über docker-compose.yml übergeben.
 ESLint Konfiguration: ESLint erkennt Node.js-Globals (require, module, process) nicht automatisch — sie müssen explizit in der Konfiguration deklariert werden.
+Multi-Environment: Dev und Prod Umgebungen brauchen separate Deploy Hooks und Render Services — aber teilen dieselbe Neon Datenbank.
 Projektstruktur
 DEP_LB2/
 ├── src/
@@ -137,10 +159,10 @@ DEP_LB2/
 │   │   └── todos.js          # CRUD Endpoints
 │   ├── __tests__/
 │   │   └── health.test.js    # Automatisierter Test
-│   └── index.js              # Express App, Swagger Setup
+│   └── index.js              # Express App, Swagger Setup, Metrics
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml        # GitHub Actions Pipeline
+│       └── deploy.yml        # GitHub Actions Pipeline (dev + prod)
 ├── Dockerfile                # Multi-stage, Non-Root
 ├── docker-compose.yml        # Lokale Entwicklung
 ├── .env.example              # Beispiel-Konfiguration
