@@ -30,6 +30,10 @@ Sie wurde im Rahmen des Moduls DEP entwickelt, um den vollständigen Deployment-
 
 ## Architekturübersicht
 
+---
+
+## Architekturübersicht
+
 ```mermaid
 graph TD
     A[Developer] -->|git push| B[GitHub]
