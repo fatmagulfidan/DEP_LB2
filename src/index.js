@@ -8,6 +8,13 @@ const todosRouter = require('./routes/todos');
 
 app.use(express.json());
 
+let requestCount = 0;
+
+app.use((req, res, next) => {
+  requestCount++;
+  next();
+});
+
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -29,9 +36,21 @@ app.get('/health', async (req, res) => {
   try {
     await pool.query('SELECT 1');
     res.json({ status: 'ok', db: 'connected' });
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ status: 'error', db: 'disconnected' });
   }
+});
+
+app.get('/metrics', (req, res) => {
+  const uptime = process.uptime();
+  const memoryUsage = process.memoryUsage();
+  res.json({
+    uptime_seconds: Math.floor(uptime),
+    total_requests: requestCount,
+    memory_used_mb: Math.floor(memoryUsage.heapUsed / 1024 / 1024),
+    memory_total_mb: Math.floor(memoryUsage.heapTotal / 1024 / 1024),
+    node_version: process.version,
+  });
 });
 
 app.use('/todos', todosRouter);

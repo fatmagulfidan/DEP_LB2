@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
 
 jobs:
   test:
@@ -18,13 +18,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run lint
+        run: npm run lint
+
+      - name: Security audit
+        run: npm audit --audit-level=high
+
       - name: Run tests
         run: npm test
 
-  deploy:
+  deploy-dev:
     needs: test
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/dev'
     steps:
-      - name: Trigger Render Deploy
+      - name: Trigger Render Dev Deploy
+        run: |
+          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_DEV }}
+
+  deploy-prod:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Trigger Render Prod Deploy
         run: |
           curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
