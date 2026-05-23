@@ -32,23 +32,23 @@ Sie wurde im Rahmen des Moduls DEP entwickelt, um den vollständigen Deployment-
 
 ```mermaid
 graph TD
-    A[Developer] -->|git push dev| B[GitHub]
-    A -->|git push main| B
+    A[Developer] -->|git push| B[GitHub]
     B -->|trigger| C[GitHub Actions]
-    C -->|lint + audit + test| D{Tests OK?}
-    D -->|Nein| F[Stop]
-    D -->|dev branch| G[deploy-dev]
-    D -->|main branch| H[deploy-prod]
-    G --> I[Render dev]
-    H --> J[Render prod]
-    I -->|PostgreSQL| K[Neon Database]
-    J -->|PostgreSQL| K
-    L[Browser] -->|HTTPS| J
-Zwei Services:
+    C -->|lint+test| D{OK?}
+    D -->|Nein| E[Stop]
+    D -->|dev| F[Render dev]
+    D -->|main| G[Render prod]
+    F -->|DB| H[Neon]
+    G -->|DB| H
+    I[Browser] -->|HTTPS| G
+```
 
-Express API – läuft in einem Docker Container auf Render
-PostgreSQL – Managed Database auf Neon (externer Cloud-Dienst)
-Die beiden Services kommunizieren über eine SSL-gesicherte Verbindung via DATABASE_URL.
+**Zwei Services:**
+
+- **Express API** – Docker Container auf Render
+- **PostgreSQL** – Managed Database auf Neon
+
+Die Services kommunizieren via `DATABASE_URL`.
 
 Technologie-Stack
 Technologie	Zweck
